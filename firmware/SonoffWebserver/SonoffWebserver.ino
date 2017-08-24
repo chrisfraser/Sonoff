@@ -1,32 +1,32 @@
 /*
- * Copyright (c) 2016 ImUrlaub
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *
+   Copyright (c) 2016 ImUrlaub
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without modification,
+   are permitted provided that the following conditions are met:
+
  * * Redistributions of source code must retain the above copyright notice, this
- *   list of conditions and the following disclaimer.
- *
+     list of conditions and the following disclaimer.
+
  * * Redistributions in binary form must reproduce the above copyright notice, this
- *   list of conditions and the following disclaimer in the documentation and/or
- *   other materials provided with the distribution.
- *
+     list of conditions and the following disclaimer in the documentation and/or
+     other materials provided with the distribution.
+
  * * Neither the name of Majenko Technologies nor the names of its
- *   contributors may be used to endorse or promote products derived from
- *   this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+     contributors may be used to endorse or promote products derived from
+     this software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+   ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+   ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -35,8 +35,10 @@
 
 #include "Sonoff.h"
 
-const char *ssid = "ssid";
-const char *password = "pass";
+//const char *ssid = "GwaAndBelly";
+//const char *password = "N3wS3cur3P@ss";
+const char *ssid = "DerPub";
+const char *password = "candydreams";
 
 ESP8266WebServer server ( 80 );
 
@@ -45,50 +47,59 @@ Sonoff sonoff;
 const int led = LED;
 
 void handleRoot() {
-  
-  char temp[400];
+
+  char temp[600];
   int sec = millis() / 1000;
   int min = sec / 60;
   int hr = min / 60;
 
 
   for ( uint8_t i = 0; i < server.args(); i++ ) {
-    if(server.argName(i) == String("relay")){
-      if(server.arg(i) == String("on")){
+    if (server.argName(i) == String("relay")) {
+      if (server.arg(i) == String("on")) {
         sonoff.relay.on();
-        digitalWrite ( led, 0 );  
+        digitalWrite ( led, 0 );
       }
-      else if(server.arg(i) == String("off")){
+      else if (server.arg(i) == String("off")) {
         sonoff.relay.off();
         digitalWrite ( led, 1 );
       }
     }
   }
   char *r;
-  if(sonoff.relay.isOn()) r = "on"; 
-  else r = "off"; 
+  if (sonoff.relay.isOn()) r = "on";
+  else r = "off";
 
-  snprintf ( temp, 400,
-
+  snprintf ( temp, 600,
 "<html>\
-  <head>\
-    <meta http-equiv='refresh' content='5'/>\
-    <title>Sonoff Demo</title>\
-    <style>\
-      body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }\
-    </style>\
-  </head>\
-  <body>\
-    <h1>Hello from Sonoff!</h1>\
-    <p>Uptime: %02d:%02d:%02d</p>\
-    <p>Relay: %s</p>\
-    <a href=\"/?relay=on\">Relay on</a><br>\
-    <a href=\"/?relay=off\">Relay off</a><br>\
-  </body>\
+<head>\
+<title>Tank Switcher</title>\
+<style>\
+body {\
+background-color: #cccccc;\
+font-family: Arial, Helvetica, Sans-Serif;\
+Color: #000088;\
+}\
+</style>\
+<script>\
+function switchRelay(state) {\
+var httpRequest = new XMLHttpRequest();\
+httpRequest.open(\'POST\', \'/?relay=\' + state);\
+httpRequest.send();\
+}\
+</script>\
+</head>\
+<body>\
+<h1>Hello from FishTank!</h1>\
+<p>Uptime: %02d:%02d:%02d</p>\
+<p>Relay: %s</p>\
+<button onclick=\"switchRelay(\'on\')\">Relay on</button><br>\
+<button onclick=\"switchRelay(\'off\')\">Relay off</button><br>\
+<i>Reload page to refresh state!</i>\
+</body>\
 </html>",
-
-    hr, min % 60, sec % 60, r
-  );
+             hr, min % 60, sec % 60, r
+           );
   server.send ( 200, "text/html", temp );
 }
 
@@ -138,15 +149,32 @@ void setup ( void ) {
     digitalWrite ( led, 0 );
     server.send ( 200, "text/plain", "on" );
   } );
+
   server.on ( "/off", []() {
     sonoff.relay.off();
     digitalWrite ( led, 1 );
     server.send ( 200, "text/plain", "off" );
   } );
+
+  server.on ( "/toggle", []() {
+    if (sonoff.relay.isOn()) {
+
+      sonoff.relay.off();
+      digitalWrite ( led, 1 );
+      server.send ( 200, "text/plain", "off" );
+    } else {
+      sonoff.relay.on();
+      digitalWrite ( led, 0 );
+      server.send ( 200, "text/plain", "on" );
+
+    }
+  } );
+
   server.on ( "/state", []() {
-    if(sonoff.relay.isOn()) server.send ( 200, "text/plain", "on" );
+    if (sonoff.relay.isOn()) server.send ( 200, "text/plain", "on" );
     else server.send ( 200, "text/plain", "off" );
   } );
+
   server.onNotFound ( handleNotFound );
   server.begin();
   Serial.println ( "HTTP server started" );
@@ -155,8 +183,8 @@ void setup ( void ) {
 void loop ( void ) {
   server.handleClient();
   sonoff.loop();
-  if(sonoff.sw.getEvent() == SWITCH_EVENT_ON){
-    if(sonoff.relay.isOn()){
+  if (sonoff.sw.getEvent() == SWITCH_EVENT_ON) {
+    if (sonoff.relay.isOn()) {
       sonoff.relay.off();
       digitalWrite ( led, 1 );
     }
